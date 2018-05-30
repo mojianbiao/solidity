@@ -5258,14 +5258,12 @@ BOOST_AUTO_TEST_CASE(byte_array_pop)
 	)";
 	compileAndRun(sourceCode);
 	ABI_CHECK(callContractFunction("test()"), encodeArgs(2, 1, 1));
-	BOOST_CHECK(storageEmpty(m_contractAddress));
 }
 
 BOOST_AUTO_TEST_CASE(byte_array_pop_long)
 {
 	char const* sourceCode = R"(
 		contract c {
-			// uint256 a;
 			bytes data;
 			function test() public returns (uint l) {
 				for (uint i = 0; i < 33; i++)
@@ -5277,13 +5275,15 @@ BOOST_AUTO_TEST_CASE(byte_array_pop_long)
 	)";
 	compileAndRun(sourceCode);
 	ABI_CHECK(callContractFunction("test()"), encodeArgs(32));
-	BOOST_CHECK(storageEmpty(m_contractAddress));
 }
 
 BOOST_AUTO_TEST_CASE(byte_array_pop_empty_exception)
 {
 	char const* sourceCode = R"(
 		contract c {
+			uint256 a;
+			uint256 b;
+			uint256 c;
 			bytes data;
 			function test() public returns (bool) {
 				data.pop();
@@ -5319,18 +5319,24 @@ BOOST_AUTO_TEST_CASE(byte_array_pop_storage_empty_long)
 {
 	char const* sourceCode = R"(
 		contract c {
+			uint256 a;
+			uint256 b;
+			uint256 c;
 			bytes data;
-			function test() public returns (uint l) {
-				for (uint i = 0; i < 33; i++)
-					data.push(3);
-				for (uint j = 0; j < 33; j++)
+			function test() public returns (bool) {
+				for (uint8 i = 0; i <= 32; i++)
+					data.push(byte(i+1));
+				for (int8 j = 32; j >= 0; j--) {
+					require(data[uint8(j)] == byte(j+1));
+					require(data.length == uint8(j+1));
 					data.pop();
-				l = data.length;
+				}
+				return true;
 			}
 		}
 	)";
 	compileAndRun(sourceCode);
-	ABI_CHECK(callContractFunction("test()"), encodeArgs(0));
+	ABI_CHECK(callContractFunction("test()"), encodeArgs(true));
 	BOOST_CHECK(storageEmpty(m_contractAddress));
 }
 
